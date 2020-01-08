@@ -653,6 +653,14 @@ class DPaillier:
                     break
         return [partial_decryption, q12_list[0], q13_list[0]]
 
+    def add(self, x, y):
+        sum = gmpy2.f_mod(gmpy2.mul(x, y), self.N * self.N)
+        return sum
+
+    def mul(self, x, y):
+        product = gmpy2.powmod(x, y, self.N * self.N)
+        return product
+
 
 if __name__ == "__main__":
     flag_send_1_to_2 = multiprocessing.Value('l', 0)
@@ -683,11 +691,18 @@ if __name__ == "__main__":
     d_paillier.distributed_Paillier_key_generation(flag_send_1_to_2, flag_send_1_to_3, data_1_to_2_queue, data_1_to_3_queue, q12, q13)
 
     # decryption and encryption
-    massage = 123456789
-    print("massage = ", massage)
-    ciphertext = d_paillier.encrypt(massage)
+    m1 = 464313146
+    m2 = 976311987
+    m3 = 598188167
+    print("m1 = ", m1)
+    print("m2 = ", m2)
+    print("m3 = ", m3)
+    c1 = d_paillier.encrypt(m1)
+    c2 = d_paillier.encrypt(m2)
+    c3 = d_paillier.encrypt(m3)
+    ciphertext = d_paillier.mul(d_paillier.add(c1, c2), m3)  # (m1 + m2) * m3 % N
     d_paillier.send_ciphertext(ciphertext)
-    print("ciphertext = ", ciphertext)
+
     partial_decryption = d_paillier.partial_decrypt(ciphertext)
     print("partial decryption = ", partial_decryption)
     d_paillier.send_partial_decryption(partial_decryption)
@@ -695,10 +710,11 @@ if __name__ == "__main__":
     decrypted_massage = d_paillier.combine_partial_decrypt(partial_decryption_list)
     print("decrypted massage = ", decrypted_massage)
 
-    if decrypted_massage == massage:
-        print("Didtributed Paillier encryption/decryption success")
+    if decrypted_massage == gmpy2.f_mod((m1 + m2) * m3, d_paillier.N):
+        print("Didtributed Paillier encryption/decryption/HE operation success")
     else:
-        print("Didtributed Paillier encryption/decryption fail")
+        print("Didtributed Paillier encryption/decryption/HE operation fail")
+
 
 
 

@@ -694,10 +694,10 @@ if __name__ == "__main__":
     m1 = 464313146
     m2 = 976311987
     m3 = 598188167
-    print("(m1 + m2) * m3 % N = ", gmpy2.f_mod((m1 + m2) * m3, d_paillier.N))
     print("m1 = ", m1)
     print("m2 = ", m2)
     print("m3 = ", m3)
+    print("(m1 + m2) * m3 % N = ", gmpy2.f_mod((m1 + m2) * m3, d_paillier.N))
     c1 = d_paillier.encrypt(m1)
     c2 = d_paillier.encrypt(m2)
     c3 = d_paillier.encrypt(m3)

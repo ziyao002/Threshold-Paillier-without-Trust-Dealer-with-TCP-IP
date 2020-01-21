@@ -8,11 +8,12 @@ from gmpy2 import mpz
 from queue import Queue
 
 # P1:server, P2:server/client, P3:client
-server_port1 = 9000
-server_port2 = 8000
-client_port2 = 8001
-client_port31 = 7000
-client_port32 = 7001
+server_port1 = 19000
+server_port2 = 18000
+client_port2 = 18001
+client_port31 = 17000
+client_port32 = 17001
+key_length = 64
 
 
 def rec_msg(tcp_socket, port_num, q12, q13):
@@ -93,8 +94,15 @@ def client2(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_q
 
 
 class DPaillier:
-    def __init__(self, party_index):
-        self.KeyLength = mpz(64)
+    def __init__(self, party_index, key_length, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32):
+        self.flag_send_3_to_1 = flag_send_3_to_1
+        self.flag_send_3_to_2 = flag_send_3_to_2
+        self.data_3_to_1_queue = data_3_to_1_queue
+        self.data_3_to_2_queue = data_3_to_2_queue
+        self.q31 = q31
+        self.q32 = q32
+
+        self.KeyLength = key_length//2
         self.PartyIndex = party_index
         self.PartyNumber = 3
         self.PP = 0
@@ -212,31 +220,31 @@ class DPaillier:
 
         return [[pi1, ppi1, qi1, qqi1, hi1, hhi1], [pi2, ppi2, qi2, qqi2, hi2, hhi2], [pi3, ppi3, qi3, qqi3, hi3, hhi3]]
 
-    def send_pq_tuple(self, pq_tuple, send_party_index, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
+    def send_pq_tuple(self, pq_tuple, send_party_index):
         for ctuple in pq_tuple:
             # print("ctuple = ", ctuple, "send_party_index = ", send_party_index)
-            self.send_data(ctuple, send_party_index, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(ctuple, send_party_index)
 
-    def send_data(self, data, party_send_index, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
+    def send_data(self, data, party_send_index):
         while True:
-            if party_send_index == 1 and flag_send_3_to_1.value == 0:
-                data_3_to_1_queue.put(data)
-                flag_send_3_to_1.value = 1
+            if party_send_index == 1 and self.flag_send_3_to_1.value == 0:
+                self.data_3_to_1_queue.put(data)
+                self.flag_send_3_to_1.value = 1
                 break
-            elif party_send_index == 2 and flag_send_3_to_2.value == 0:
-                data_3_to_2_queue.put(data)
-                flag_send_3_to_2.value = 1
+            elif party_send_index == 2 and self.flag_send_3_to_2.value == 0:
+                self.data_3_to_2_queue.put(data)
+                self.flag_send_3_to_2.value = 1
                 break
             else:
                 pass
 
-    def receive_pq_tuple_list(self, self_pq_tuple_list, q31, q32):
+    def receive_pq_tuple_list(self, self_pq_tuple_list):
         q31_list = []
         q32_list = []
         while True:
             while True:
-                while not q31.empty():
-                    q31_list.append(mpz(q31.get()))
+                while not self.q31.empty():
+                    q31_list.append(mpz(self.q31.get()))
                     if q31_list:
                         if q31_list[-1] == mpz(11113333):
                             break
@@ -244,8 +252,8 @@ class DPaillier:
                     if q31_list[-1] == mpz(11113333):
                         break
             while True:
-                while not q32.empty():
-                    q32_list.append(mpz(q32.get()))
+                while not self.q32.empty():
+                    q32_list.append(mpz(self.q32.get()))
                     if q32_list:
                         if q32_list[-1] == mpz(22223333):
                             break
@@ -255,13 +263,13 @@ class DPaillier:
             break
         return [q31_list[0:-1], q32_list[0:-1], self_pq_tuple_list[2]]
 
-    def receive_Ni_list(self, self_Ni, q31, q32):
+    def receive_Ni_list(self, self_Ni):
         q31_list = []
         q32_list = []
         while True:
             while True:
-                while not q31.empty():
-                    q31_list.append(mpz(q31.get()))
+                while not self.q31.empty():
+                    q31_list.append(mpz(self.q31.get()))
                     if q31_list:
                         if q31_list[-1] == 11113333:
                             break
@@ -269,8 +277,8 @@ class DPaillier:
                     if q31_list[-1] == 11113333:
                         break
             while True:
-                while not q32.empty():
-                    q32_list.append(mpz(q32.get()))
+                while not self.q32.empty():
+                    q32_list.append(mpz(self.q32.get()))
                     if q32_list:
                         if q32_list[-1] == 22223333:
                             break
@@ -280,13 +288,13 @@ class DPaillier:
             break
         return [q31_list[0], q32_list[0], self_Ni]
 
-    def send_pq_tuple_list(self, pq_tuple_list, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
-        self.send_pq_tuple(pq_tuple_list[0], 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_pq_tuple(pq_tuple_list[1], 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+    def send_pq_tuple_list(self, pq_tuple_list):
+        self.send_pq_tuple(pq_tuple_list[0], 1)
+        self.send_data(33331111, 1)
+        self.send_pq_tuple(pq_tuple_list[1], 2)
+        self.send_data(33332222, 2)
         while True:
-            if flag_send_3_to_2.value == 0:
+            if self.flag_send_3_to_2.value == 0:
                 break
 
     def share_verification(self, received_pq_tuple_list):
@@ -315,20 +323,20 @@ class DPaillier:
         # print("Ni_list = ", Ni_list)
         print("Candidate modulus = ", self.N)
 
-    def send_Ni(self, Ni, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
-        self.send_data(Ni, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(Ni, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+    def send_Ni(self, Ni):
+        self.send_data(Ni, 1)
+        self.send_data(33331111, 1)
+        self.send_data(Ni, 2)
+        self.send_data(33332222, 2)
         while True:
-            if flag_send_3_to_2.value == 0:
+            if self.flag_send_3_to_2.value == 0:
                 break
 
-    def receive_gg(self, q31):
+    def receive_gg(self):
         q31_list = []
         while True:
-            while not q31.empty():
-                q31_list.append(mpz(q31.get()))
+            while not self.q31.empty():
+                q31_list.append(mpz(self.q31.get()))
                 if q31_list:
                     if q31_list[-1] == 11113333:
                         break
@@ -341,12 +349,12 @@ class DPaillier:
         else:
             raise Exception("gg generation Error!")
 
-    def receive_Q_list(self, q31, q32):
+    def receive_Q_list(self):
         q31_list = []
         q32_list = []
         while True:
-            while not q31.empty():
-                q31_list.append(mpz(q31.get()))
+            while not self.q31.empty():
+                q31_list.append(mpz(self.q31.get()))
                 if q31_list:
                     if q31_list[-1] == 11113333:
                         break
@@ -354,8 +362,8 @@ class DPaillier:
                 if q31_list[-1] == 11113333:
                     break
         while True:
-            while not q32.empty():
-                q32_list.append(mpz(q32.get()))
+            while not self.q32.empty():
+                q32_list.append(mpz(self.q32.get()))
                 if q32_list:
                     if q32_list[-1] == 22223333:
                         break
@@ -364,18 +372,18 @@ class DPaillier:
                     break
         return [q31_list[0], q32_list[0], self.Q]
 
-    def biprimality_check(self, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32):
-        self.receive_gg(q31)
+    def biprimality_check(self):
+        self.receive_gg()
         self.Q = gmpy2.powmod(self.gg, gmpy2.f_div(self.pi + self.qi, 4), self.N)
 
-        self.send_data(self.Q, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(self.Q, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_data(self.Q, 1)
+        self.send_data(33331111, 1)
+        self.send_data(self.Q, 2)
+        self.send_data(33332222, 2)
         while True:
-            if flag_send_3_to_2.value == 0:
+            if self.flag_send_3_to_2.value == 0:
                 break
-        Q_list = self.receive_Q_list(q31, q32)
+        Q_list = self.receive_Q_list()
         # print("Q_list = ", Q_list)
         # print("Q_list = ", Q_list)
 
@@ -389,21 +397,21 @@ class DPaillier:
             (Q1 * Q2_inv * Q3_inv), self.N) == gmpy2.f_mod(mpz(-1), self.N)
         return biprimality_check
 
-    def send_pq_sum(self, pq_sum, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
-        self.send_data(pq_sum, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(pq_sum, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+    def send_pq_sum(self, pq_sum):
+        self.send_data(pq_sum, 1)
+        self.send_data(33331111, 1)
+        self.send_data(pq_sum, 2)
+        self.send_data(33332222, 2)
         while True:
-            if flag_send_3_to_2.value == 0:
+            if self.flag_send_3_to_2.value == 0:
                 break
 
-    def receive_pq_sum_list(self, q31, q32):
+    def receive_pq_sum_list(self):
         q31_list = []
         q32_list = []
         while True:
-            while not q31.empty():
-                q31_list.append(mpz(q31.get()))
+            while not self.q31.empty():
+                q31_list.append(mpz(self.q31.get()))
                 if q31_list:
                     if q31_list[-1] == 11113333:
                         break
@@ -411,8 +419,8 @@ class DPaillier:
                 if q31_list[-1] == 11113333:
                     break
         while True:
-            while not q32.empty():
-                q32_list.append(mpz(q32.get()))
+            while not self.q32.empty():
+                q32_list.append(mpz(self.q32.get()))
                 if q32_list:
                     if q32_list[-1] == 22223333:
                         break
@@ -421,21 +429,21 @@ class DPaillier:
                     break
         return [q31_list[0], q32_list[0], self.pq_sum]
 
-    def send_thetai(self, thetai, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
-        self.send_data(thetai, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(thetai, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+    def send_thetai(self, thetai):
+        self.send_data(thetai, 1)
+        self.send_data(33331111, 1)
+        self.send_data(thetai, 2)
+        self.send_data(33332222, 2)
         while True:
-            if flag_send_3_to_2.value == 0:
+            if self.flag_send_3_to_2.value == 0:
                 break
 
-    def receive_thetai_list(self, q31, q32):
+    def receive_thetai_list(self):
         q31_list = []
         q32_list = []
         while True:
-            while not q31.empty():
-                q31_list.append(mpz(q31.get()))
+            while not self.q31.empty():
+                q31_list.append(mpz(self.q31.get()))
                 if q31_list:
                     if q31_list[-1] == 11113333:
                         break
@@ -443,8 +451,8 @@ class DPaillier:
                 if q31_list[-1] == 11113333:
                     break
         while True:
-            while not q32.empty():
-                q32_list.append(mpz(q32.get()))
+            while not self.q32.empty():
+                q32_list.append(mpz(self.q32.get()))
                 if q32_list:
                     if q32_list[-1] == 22223333:
                         break
@@ -453,23 +461,23 @@ class DPaillier:
                     break
         return [q31_list[0], q32_list[0], self.thetai]
 
-    def send_rh(self, r31, r32, h31, h32, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
-        self.send_data(r31, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(h31, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(r32, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(h32, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+    def send_rh(self, r31, r32, h31, h32):
+        self.send_data(r31, 1)
+        self.send_data(h31, 1)
+        self.send_data(33331111, 1)
+        self.send_data(r32, 2)
+        self.send_data(h32, 2)
+        self.send_data(33332222, 2)
         while True:
-            if flag_send_3_to_2.value == 0:
+            if self.flag_send_3_to_2.value == 0:
                 break
 
-    def receive_rh_list(self, q31, q32):
+    def receive_rh_list(self):
         q31_list = []
         q32_list = []
         while True:
-            while not q31.empty():
-                q31_list.append(mpz(q31.get()))
+            while not self.q31.empty():
+                q31_list.append(mpz(self.q31.get()))
                 if q31_list:
                     if q31_list[-1] == 11113333:
                         break
@@ -477,8 +485,8 @@ class DPaillier:
                 if q31_list[-1] == 11113333:
                     break
         while True:
-            while not q32.empty():
-                q32_list.append(mpz(q32.get()))
+            while not self.q32.empty():
+                q32_list.append(mpz(self.q32.get()))
                 if q32_list:
                     if q32_list[-1] == 22223333:
                         break
@@ -487,7 +495,7 @@ class DPaillier:
                     break
         return [q31_list[0:-1], q32_list[0:-1]]
 
-    def Ri_sharing(self, r, modulus, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32):
+    def Ri_sharing(self, r, modulus):
         random_state = gmpy2.random_state(int(time.time() * 100000))
         a1 = gmpy2.mpz_random(random_state, modulus)
         random_state = gmpy2.random_state(int(time.time() * 100000))
@@ -502,13 +510,13 @@ class DPaillier:
         h32 = c1 * 2 + c2 * 2 * 2
         h33 = c1 * 3 + c2 * 3 * 3
 
-        self.send_rh(r31, r32, h31, h32, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        rh_list = self.receive_rh_list(q31, q32)
+        self.send_rh(r31, r32, h31, h32)
+        rh_list = self.receive_rh_list()
         Ri = rh_list[0][0] + rh_list[0][1] +r33 + rh_list[1][0] + rh_list[1][1] + h33
 
         return Ri
 
-    def distributed_RSA_modulus_generation(self, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32):
+    def distributed_RSA_modulus_generation(self):
         while True:
             # print("Distributed RSA modulus generation start")
             self.pi = self.pick_pq()
@@ -517,28 +525,28 @@ class DPaillier:
             pq_tuple_list = self.compute_tuple()
             # print("send_pq_tuple_list = ", pq_tuple_list)
             # print("compute pq tuple done")
-            self.send_pq_tuple_list(pq_tuple_list, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_pq_tuple_list(pq_tuple_list)
             # print("send pq tuple list done")
-            received_pq_tuple_list = self.receive_pq_tuple_list(pq_tuple_list, q31, q32)
+            received_pq_tuple_list = self.receive_pq_tuple_list(pq_tuple_list)
             # print("received_pq_tuple_list", received_pq_tuple_list)
             # print("receive pq tuple list done")
             self.share_verification(received_pq_tuple_list)
             Ni = self.compute_Ni(received_pq_tuple_list)
             # print("compute Ni done")
-            self.send_Ni(Ni, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_Ni(Ni)
             # print("send Ni done")
-            Ni_list = self.receive_Ni_list(Ni, q31, q32)
+            Ni_list = self.receive_Ni_list(Ni)
             # print("receive Ni list done")
             # print("Ni_list = ", Ni_list)
             self.N_verification(Ni_list)
             self.compute_N(Ni_list)
             # print("compute N done")
-            if self.biprimality_check(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32):
+            if self.biprimality_check():
                 break
             # print("biprimality check done")
             # self.start_sync(q31, q32)
 
-    def distributed_Paillier_key_generation(self, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32):
+    def distributed_Paillier_key_generation(self):
         self.generator = self.N + 1
         self.modulus_KN = self.secure_K * self.N
         self.modulus_KKN = self.secure_K * self.secure_K * self.N
@@ -550,16 +558,16 @@ class DPaillier:
         self.ri_delta = self.delta * self.ri
 
         self.pq_sum = self.pi + self.qi
-        self.send_pq_sum(self.pq_sum, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        pq_sum_list = self.receive_pq_sum_list(q31, q32)
+        self.send_pq_sum(self.pq_sum)
+        pq_sum_list = self.receive_pq_sum_list()
         self.phi = self.N + 1 - pq_sum_list[0] - pq_sum_list[1] - pq_sum_list[2]
 
         self.thetai = self.delta * self.phi * self.beta + self.N * self.delta * self.ri
-        self.send_thetai(self.thetai, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        thetai_list = self.receive_thetai_list(q31, q32)
+        self.send_thetai(self.thetai)
+        thetai_list = self.receive_thetai_list()
         self.theta = thetai_list[0] + thetai_list[1] + thetai_list[2]
 
-        self.fi = self.N * self.Ri_sharing(self.ri_delta, self.modulus_KKN, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32) - self.theta
+        self.fi = self.N * self.Ri_sharing(self.ri_delta, self.modulus_KKN) - self.theta
 
         # verification key
         self.r_vk = self.gen_coprime(self.N * self.N)
@@ -593,30 +601,30 @@ class DPaillier:
 
         return M
 
-    def send_ciphertext(self, ciphertext, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
-        self.send_data(ciphertext, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(22221111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(ciphertext, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(22223333, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+    def send_ciphertext(self, ciphertext):
+        self.send_data(ciphertext, 1)
+        self.send_data(22221111, 1)
+        self.send_data(ciphertext, 3)
+        self.send_data(22223333, 3)
         while True:
-            if flag_send_3_to_2.value == 0:
+            if self.flag_send_3_to_2.value == 0:
                 break
 
-    def send_partial_decryption(self, partial_decryption, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
-        self.send_data(partial_decryption, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(partial_decryption, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+    def send_partial_decryption(self, partial_decryption):
+        self.send_data(partial_decryption, 1)
+        self.send_data(33331111, 1)
+        self.send_data(partial_decryption, 2)
+        self.send_data(33332222, 2)
         while True:
-            if flag_send_3_to_2.value == 0:
+            if self.flag_send_3_to_2.value == 0:
                 break
 
-    def rec_partial_decryption_list(self, partial_decryption, q31, q32):
+    def rec_partial_decryption_list(self, partial_decryption):
         q31_list = []
         q32_list = []
         while True:
-            while not q31.empty():
-                q31_list.append(mpz(q31.get()))
+            while not self.q31.empty():
+                q31_list.append(mpz(self.q31.get()))
                 if q31_list:
                     if q31_list[-1] == 11113333:
                         break
@@ -624,8 +632,8 @@ class DPaillier:
                 if q31_list[-1] == 11113333:
                     break
         while True:
-            while not q32.empty():
-                q32_list.append(mpz(q32.get()))
+            while not self.q32.empty():
+                q32_list.append(mpz(self.q32.get()))
                 if q32_list:
                     if q32_list[-1] == 22223333:
                         break
@@ -634,11 +642,11 @@ class DPaillier:
                     break
         return [q31_list[0], q32_list[0], partial_decryption]
 
-    def rec_ciphertext(self, q31):
+    def rec_ciphertext(self):
         q31_list = []
         while True:
-            while not q31.empty():
-                q31_list.append(mpz(q31.get()))
+            while not self.q31.empty():
+                q31_list.append(mpz(self.q31.get()))
                 if q31_list:
                     if q31_list[-1] == 11113333:
                         break
@@ -672,21 +680,21 @@ if __name__ == "__main__":
 
     # distributed Paillier key generation
     start = time.time()
-    d_paillier = DPaillier(3)
-    d_paillier.distributed_RSA_modulus_generation(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32)
+    d_paillier = DPaillier(3, key_length, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32)
+    d_paillier.distributed_RSA_modulus_generation()
     stop = time.time()
     print("RSA modulus generation success")
     print("modulus = ", d_paillier.N)
     print("duration = ", stop - start, "seconds")
-    d_paillier.distributed_Paillier_key_generation(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32)
+    d_paillier.distributed_Paillier_key_generation()
 
     # decryption and encryption
-    ciphertext = d_paillier.rec_ciphertext(q31)
+    ciphertext = d_paillier.rec_ciphertext()
     print("ciphertext = ", ciphertext)
     partial_decryption = d_paillier.partial_decrypt(ciphertext)
     print("partial decryption = ", partial_decryption)
-    d_paillier.send_partial_decryption(partial_decryption, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
-    partial_decryption_list = d_paillier.rec_partial_decryption_list(partial_decryption, q31, q32)
+    d_paillier.send_partial_decryption(partial_decryption)
+    partial_decryption_list = d_paillier.rec_partial_decryption_list(partial_decryption)
     print("partial_decryption_list = ", partial_decryption_list)
     decrypted_massage = d_paillier.combine_partial_decrypt(partial_decryption_list)
     print("decrypted massage = ", decrypted_massage)
